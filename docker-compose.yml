@@ -1,0 +1,33 @@
+x-default: &default
+  image: eclipse-mosquitto
+  volumes:
+    - ./mosquitto.conf:/mosquitto/config/mosquitto.conf
+    - ./data:/mosquitto/data
+    # - ./logs:/mosquitto/logs
+
+services:
+  mqtt:
+    <<: *default
+    depends_on:
+      - mqtt_passwd
+    ports:
+      - 1883:1883
+    command: /usr/sbin/mosquitto -c /mosquitto/config/mosquitto.conf -v
+
+  mqtt_passwd:
+    <<: *default
+    command: mosquitto_passwd -c -b /mosquitto/data/passwd test password
+
+  mqtt_sub:
+    <<: *default
+    restart: on-failure
+    depends_on:
+     - mqtt
+    command: mosquitto_sub -d -h mqtt -t foo -u test -P password
+
+  mqtt_pub:
+    <<: *default
+    restart: on-failure
+    depends_on:
+     - mqtt
+    command: mosquitto_pub -d -h mqtt -t foo -u test -P password -m "test message"
